@@ -1,86 +1,96 @@
-import { StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import React, { useCallback, useRef, useState } from 'react';
+import { Pressable, Text, TVFocusGuideView, View } from 'react-native';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { useScreenDimensions } from '@/hooks/use-screen-dimensions';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const videoSource = require('@/assets/bach-handel-corelli.mp4');
 
-export default function HomeScreen() {
-  const styles = useHomeStyles();
+function ControlButton({
+  label,
+  onPress,
+}: {
+  label: string;
+  onPress: () => void;
+}) {
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedView style={styles.titleContainer}>
-            <ThemedText type="title" style={styles.title}>
-              Welcome to&nbsp;Expo
-            </ThemedText>
-          </ThemedView>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow title="Try editing" hint="src/app/(tabs)/index.tsx" />
-          <HintRow title="Dev tools" hint="cmd+d" />
-          <HintRow title="Fresh start" hint="npm reset project" />
-        </ThemedView>
-
-        <WebBadge />
-      </SafeAreaView>
-    </ThemedView>
+    <Pressable
+      onPress={onPress}
+      className="bg-white/20 focus:bg-blue-600 active:bg-blue-800 rounded-xl px-6 py-4 mx-2"
+    >
+      <Text className="text-white text-xl font-semibold text-center">
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
-const useHomeStyles = () => {
-  const { spacing, width, landscape } = useScreenDimensions();
+export default function VideoPlayerScreen() {
+  const videoViewRef = useRef<VideoView>(null);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
-  return StyleSheet.create({
-    container: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      width,
-    },
-    safeArea: {
-      marginTop: landscape ? spacing.six : 0,
-      marginBottom: landscape ? spacing.two : spacing.six,
-      paddingHorizontal: spacing.four,
-      alignItems: 'center',
-      justifyContent: 'flex-end',
-      gap: spacing.three,
-      maxWidth: width * 0.8,
-    },
-    heroSection: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      flex: 1,
-      paddingHorizontal: spacing.four,
-      gap: landscape ? spacing.one : spacing.four,
-      marginBottom: landscape ? spacing.four : spacing.six,
-    },
-    titleContainer: {
-      marginTop: landscape ? spacing.two : 0,
-    },
-    title: {
-      textAlign: 'center',
-    },
-    code: {
-      lineHeight: spacing.four,
-      textTransform: 'uppercase',
-    },
-    stepContainer: {
-      gap: spacing.three,
-      alignSelf: 'stretch',
-      paddingHorizontal: spacing.three,
-      paddingVertical: spacing.four,
-      borderRadius: spacing.four,
-    },
+  const player = useVideoPlayer(videoSource, (p) => {
+    p.loop = true;
+    p.play();
   });
-};
+
+  React.useEffect(() => {
+    const subscription = player.addListener('playingChange', (event) => {
+      setIsPlaying(event.isPlaying);
+    });
+    return () => subscription.remove();
+  }, [player]);
+
+  const togglePlayPause = useCallback(() => {
+    if (player.playing) {
+      player.pause();
+    } else {
+      player.play();
+    }
+  }, [player]);
+
+  const skipBackward = useCallback(() => {
+    player.currentTime = Math.max(0, player.currentTime - 10);
+  }, [player]);
+
+  const skipForward = useCallback(() => {
+    player.currentTime = Math.min(player.duration, player.currentTime + 10);
+  }, [player]);
+
+  const rewind = useCallback(() => {
+    player.currentTime = 0;
+  }, [player]);
+
+  const enterFullScreen = useCallback(() => {
+    videoViewRef.current?.enterFullscreen();
+  }, []);
+
+  return (
+    <View className="flex-1 bg-black items-center justify-center">
+      <View className="w-4/5 aspect-video">
+        <VideoView
+          ref={videoViewRef}
+          player={player}
+          style={{ width: '100%', height: '100%' }}
+          nativeControls={isFullscreen}
+          contentFit="contain"
+          onFullscreenEnter={() => setIsFullscreen(true)}
+          onFullscreenExit={() => setIsFullscreen(false)}
+        />
+      </View>
+
+      <TVFocusGuideView autoFocus trapFocusUp trapFocusDown>
+        <View className="flex-row items-center justify-center mt-8">
+          <ControlButton label="Rewind" onPress={rewind} />
+          <ControlButton label="-10s" onPress={skipBackward} />
+          <ControlButton
+            label={isPlaying ? 'Pause' : 'Play'}
+            onPress={togglePlayPause}
+          />
+          <ControlButton label="+10s" onPress={skipForward} />
+          <ControlButton label="Fullscreen" onPress={enterFullScreen} />
+        </View>
+      </TVFocusGuideView>
+    </View>
+  );
+}
