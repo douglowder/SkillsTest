@@ -18,9 +18,9 @@ const ControlButton = React.forwardRef<
       ref={ref}
       onPress={onPress}
       hasTVPreferredFocus={hasTVPreferredFocus}
-      className="bg-white/20 focus:bg-blue-600 active:bg-blue-800 rounded-xl px-6 py-4 mx-2"
+      className="bg-white/20 focus:bg-blue-600 active:bg-blue-800 rounded-2xl px-12 py-8 mx-4"
     >
-      <Text className="text-white text-xl font-semibold text-center">
+      <Text className="text-white text-4xl font-semibold text-center">
         {label}
       </Text>
     </Pressable>
@@ -30,7 +30,7 @@ const ControlButton = React.forwardRef<
 function ProgressBar({ fraction }: { fraction: number }) {
   const pct = Math.min(Math.max(fraction, 0), 1) * 100;
   return (
-    <View className="w-4/5 h-2 bg-white/20 rounded-full overflow-hidden">
+    <View className="w-3/4 h-2 bg-white/20 rounded-full overflow-hidden mt-0">
       <View
         className="h-full bg-blue-600 rounded-full"
         style={{ width: `${pct}%` }}
@@ -96,7 +96,7 @@ export default function VideoPlayerScreen() {
   return (
     <TVFocusGuideView autoFocus style={{ flex: 1 }}>
       <View className="flex-1 bg-black items-center justify-center">
-        <View className="w-4/5 aspect-video">
+        <View className="w-3/4 aspect-video">
           {videoStatus === 'readyToPlay' ? (
             <VideoView
               focusable={false}
@@ -111,7 +111,7 @@ export default function VideoPlayerScreen() {
 
         <ProgressBar fraction={progress} />
 
-        <View className="flex-row items-center justify-center mt-4">
+        <View className="flex-row items-center justify-center mt-12">
           <ControlButton label="Rewind" onPress={rewind} />
           <ControlButton label="-10s" onPress={skipBackward} />
           <ControlButton
